@@ -1,0 +1,13 @@
+.demo-box {
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    cursor: move;
+    user-select: none;
+
+    width: 200px;
+    height: 64px;
+    line-height: 64px;
+    text-align: center;
+    font-size: 32px;
+    font-weight: 400;
+}

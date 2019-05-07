@@ -1,0 +1,11 @@
+.main-menu {
+
+    > li {
+
+        > a {
+            &.active {
+                color: green;
+            }
+        }
+    }
+}
