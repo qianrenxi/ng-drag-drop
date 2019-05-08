@@ -5,6 +5,7 @@ import { DragDropService } from './drag-drop.service';
 import { DragHandleDirective } from './directives/drag-handle.directive';
 import { DragPlaceholderDirective } from './directives/drag-placeholder.directive';
 import { DragPreviewDirective } from './directives/drag-preview.directive';
+import { DroppableDirective } from './directives/droppable.directive';
 
 @NgModule({
   imports: [
@@ -14,13 +15,15 @@ import { DragPreviewDirective } from './directives/drag-preview.directive';
     DraggableDirective,
     DragHandleDirective,
     DragPlaceholderDirective,
-    DragPreviewDirective
+    DragPreviewDirective,
+    DroppableDirective
   ],
   exports: [
     DraggableDirective,
     DragHandleDirective,
     DragPlaceholderDirective,
-    DragPreviewDirective
+    DragPreviewDirective,
+    DroppableDirective
   ],
   providers: [
     DragDropService,

@@ -1,0 +1,39 @@
+
+.drag-constrain {
+    position: relative;
+    background: #efefef;
+    border: 1px dotted #de6666;
+    height: 300px;
+    margin: 16px 0;
+    padding: 16px;
+
+    .inner-parent {
+        position: absolute;
+        top: 100px;
+        left: 50px;
+        border: 1px dotted #dd6699;
+        height: 100px;
+        width: 240px;
+    }
+}
+
+.drag-box {
+    padding: 16px 8px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    background: #ffffff;
+    width: 150px;
+}
+
+.lock-axis-wrap {
+    padding: 16px;
+
+    .drag-box {
+        float: left;
+        margin-right: 16px;
+    }
+    
+    &:after {
+        clear: left;
+    }
+}

@@ -1,4 +1,4 @@
-import { Directive, ElementRef, Input, ContentChildren, QueryList, ContentChild, ViewContainerRef, AfterViewInit, OnChanges, OnDestroy, SimpleChanges, NgZone, Inject, Output, EventEmitter } from '@angular/core';
+import { Directive, ElementRef, Input, ContentChildren, QueryList, ContentChild, ViewContainerRef, AfterViewInit, OnChanges, OnDestroy, SimpleChanges, NgZone, Inject, Output, EventEmitter, forwardRef, HostBinding } from '@angular/core';
 import { DragDropService } from '../drag-drop.service';
 import { DraggableRef, DragHelperTemplate } from '../draggable-ref';
 import { DragHandleDirective } from './drag-handle.directive';
@@ -17,7 +17,7 @@ import { DragStartEvent, DragReleaseEvent, DragEndEvent, DragEnterEvent, DragExi
 @Directive({
   selector: '[npDraggable]',
   providers: [
-    { provide: NP_DRAG_PARENT, useClass: DraggableDirective }
+    { provide: NP_DRAG_PARENT, useExisting: forwardRef(() => DraggableDirective) }
   ]
 })
 export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, OnDestroy {
@@ -69,6 +69,10 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
     };
   });
 
+  @HostBinding('class.np-drag-dragging')
+  get bindDraggingClass() {
+    return this._dragRef.isDragging();
+  }
 
   constructor(
     public element: ElementRef<HTMLElement>,
@@ -77,7 +81,7 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
     private _ngZone: NgZone,
     dragDrop: DragDropService
   ) {
-    const dragRef = this._dragRef = dragDrop.createDrag(element);
+    const dragRef = this._dragRef = dragDrop.createDrag<DraggableDirective>(element);
 
     dragRef.instance = this;
     this._syncInputs(dragRef);
@@ -89,13 +93,14 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
       .pipe(take(1), takeUntil(this._destroyed))
       .subscribe(() => {
         this._updateRootElement();
-
+        // console.log("Handles", this._handles)
         this._handles.changes.pipe(
           startWith(this._handles),
           tap((handles: QueryList<DragHandleDirective>) => {
             const childHandleElements = handles
-              .filter(handel => handel.parentDrag === this)
-              .map(handel => handel.element);
+              .filter(handle => handle.parentDrag === this)
+              .map(handle => handle.element);
+              // console.log("Handles", childHandleElements)
             this._dragRef.withHandles(childHandleElements);
           }),
           switchMap((handles: QueryList<DragHandleDirective>) => {
@@ -124,6 +129,11 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
     this._destroyed.next();
     this._destroyed.complete();
     this._dragRef.dispose();
+  }
+
+  /** Resets a standalone drag item to its initial position. */
+  public revert(): void {
+    this._dragRef.revert();
   }
 
   /** 在准备拖放时将Draggable的元素输入与底层DraggableRef做同步 */

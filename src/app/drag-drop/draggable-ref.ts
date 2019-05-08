@@ -143,7 +143,8 @@ export class DraggableRef<T = any> {
         private _viewportRuler: ViewportRuler,
         private _dragDropRegistry: DragDropRegistryService<DraggableRef, any>
     ) {
-
+        this.withRootElement(element);
+        this._dragDropRegistry.registerDragItem(this);
     }
 
     isDragging(): boolean {
@@ -201,7 +202,26 @@ export class DraggableRef<T = any> {
 
     /** Removes the dragging functionality from the DOM element. */
     dispose() {
+        this._removeRootElementListeners(this._rootElement);
+        
+        if (this.isDragging()) {
+            removeElement(this._rootElement);
+        }
+
+        this._dragDropRegistry.removeDragItem(this);
         // TODO: 
+        
+    }
+
+    /** Resets a standalone drag item to its initial position. */
+    revert() {
+        this._rootElement.style.transform = this._initialTransform || '';
+        this._activeTransform = {x: 0, y: 0};
+        this._passiveTransform = {x: 0, y: 0};
+    }
+    
+    getRootElement() {
+        return this._rootElement;
     }
 
     private _pointerDown = (event: MouseEvent | TouchEvent) => {

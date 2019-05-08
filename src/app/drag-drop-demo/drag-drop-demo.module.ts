@@ -2,14 +2,20 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DragDropModule } from '../drag-drop/drag-drop.module';
 import { DragDropDemoRoutingModule } from './drag-drop-demo-routing.module';
-import { DraggableDemoComponent } from './draggable-demo/draggable-demo.component';
+import { DraggableDemoModule } from './draggable-demo/draggable-demo.module';
+import { DroppableDemoModule } from './droppable-demo/droppable-demo.module';
+
 
 @NgModule({
-  declarations: [DraggableDemoComponent],
   imports: [
     CommonModule,
     DragDropModule,
     DragDropDemoRoutingModule,
-  ]
+    DraggableDemoModule,
+    DroppableDemoModule,
+  ],
+  declarations: [
+
+  ],
 })
 export class DragDropDemoModule { }

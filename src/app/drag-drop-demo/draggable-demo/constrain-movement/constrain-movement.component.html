@@ -1,0 +1,20 @@
+<div class="drag-constrain">
+  <div class="drag-box" npDraggable npDragBoundary=".drag-constrain">
+    Drag me around
+  </div>
+
+  <div class="inner-parent">
+    <div class="drag-box" npDraggable npDragBoundary=".inner-parent">
+      Drag me inner
+    </div>
+    <div class="drag-box" npDraggable npDragBoundary=".drag-constrain">
+      Drag me outer
+    </div>
+  </div>
+</div>
+
+
+<div class="lock-axis-wrap">
+  <div class="drag-box" npDraggable npLockAxis="y">Lock Axis Y</div>
+  <div class="drag-box" npDraggable npLockAxis="x">Lock Axis X</div>
+</div>

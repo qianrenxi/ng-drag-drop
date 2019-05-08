@@ -1,0 +1,10 @@
+.drag-box {
+    padding: 16px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    width: 240px;
+
+    &:not(.np-drag-dragging) {
+        transition: transform 0.5s;
+    }
+}

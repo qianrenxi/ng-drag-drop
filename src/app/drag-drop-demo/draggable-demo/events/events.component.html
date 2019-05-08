@@ -1,0 +1,28 @@
+<div class="drag-box"
+  npDraggable
+  (npDragStarted)="onDragStarted($event)" 
+  (npDragReleased)="onDragReleased($event)" 
+  (npDragEnded)="onDragEnded($event)" 
+  (npDragEntered)="onDragEntered($event)" 
+  (npDragExited)="onDragExited($event)" 
+  (npDragDropped)="onDragDropped($event)" 
+  (npDragMoved)="onDragMoved($event)" 
+>
+  Drag me to trigger the chain of events
+  <div class="info-item">
+    <span>"Start" invoked </span>
+    <span>{{startTimes}} x</span>
+  </div>
+  <div class="info-item">
+    <span>"Move" invoked </span>
+    <span>{{moveTimes}} x</span>
+  </div>
+  <div class="info-item">
+    <span>"Release" invoked </span>
+    <span>{{releaseTimes}} x</span>
+  </div>
+  <div class="info-item">
+    <span>"End" invoked </span>
+    <span>{{endTimes}} x</span>
+  </div>
+</div>

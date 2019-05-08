@@ -16,6 +16,8 @@ export class DragDropRegistryService<I, C> implements OnDestroy {
 
     private _document: Document;
 
+    private _dragInstances = new Set<I>();
+
     private _activeDragInstances = new Set<I>();
 
     private _globalListeners = new Map<string, {
@@ -23,9 +25,12 @@ export class DragDropRegistryService<I, C> implements OnDestroy {
         options?: AddEventListenerOptions | boolean
     }>();
 
-    readonly pointerMove: Subject<TouchEvent | MouseEvent> = new Subject<TouchEvent | MouseEvent>();
+    readonly pointerMove = new Subject<TouchEvent | MouseEvent>();
 
-    readonly pointerUp: Subject<TouchEvent | MouseEvent> = new Subject<TouchEvent | MouseEvent>();
+    readonly pointerUp = new Subject<TouchEvent | MouseEvent>();
+
+    readonly startDragging$ = new Subject<I>();
+    readonly stopDragging$ = new Subject<I>();
 
     constructor(
         private _ngZone: NgZone,
@@ -38,12 +43,35 @@ export class DragDropRegistryService<I, C> implements OnDestroy {
 
     }
 
+    registerDragItem(drag: I) {
+        this._dragInstances.add(drag);
+
+        if (this._dragInstances.size === 1) {
+            this._ngZone.runOutsideAngular(() => {
+                this._document.addEventListener('touchmove', this._preventDefaultWhileDragging,
+                    activeCapturingEventOptions)
+            });
+        }
+    }
+
+    /** Removes a drag item instance from the registry. */
+    removeDragItem(drag: I) {
+        this._dragInstances.delete(drag);
+        this.stopDragging(drag);
+
+        if (this._dragInstances.size === 0) {
+            this._document.removeEventListener('touchmove', this._preventDefaultWhileDragging,
+                activeCapturingEventOptions);
+        }
+    }
+
     isDragging(drag: I): boolean {
         return this._activeDragInstances.has(drag);
     }
 
     startDragging(drag: I, event: TouchEvent | MouseEvent) {
         this._activeDragInstances.add(drag);
+        this.startDragging$.next(drag);
 
         if (this._activeDragInstances.size === 1) {
             const isTouchEvent = event.type.startsWith('touch');
@@ -81,6 +109,7 @@ export class DragDropRegistryService<I, C> implements OnDestroy {
 
     stopDragging(drag: I) {
         this._activeDragInstances.delete(drag);
+        this.stopDragging$.next(drag);
 
         if (this._activeDragInstances.size === 0) {
             this._clearGlobalListeners();

@@ -25,6 +25,7 @@ export class DragHandleDirective implements OnDestroy {
     public element: ElementRef<HTMLElement>,
     @Inject(NP_DRAG_PARENT) @Optional() parentDrag?: any,
   ) {
+    // console.log('DragHandleDirective', element, parentDrag)
     this.parentDrag = parentDrag;
     toggleNativeDragInteractions(element.nativeElement, false);
   }

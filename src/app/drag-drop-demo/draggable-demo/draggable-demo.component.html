@@ -1,12 +1,19 @@
+<div class="demo">
 
-<div npDraggable 
-(npDragStarted)="onDragStarted($event)" 
-(npDragReleased)="onDragReleased($event)" 
-(npDragEnded)="onDragEnded($event)" 
-(npDragEntered)="onDragEntered($event)" 
-(npDragExited)="onDragExited($event)" 
-(npDragDropped)="onDragDropped($event)" 
-(npDragMoved)="onDragMoved($event)" 
-class="demo-box">
-  Draggable
+  <ul class="funcs-menu">
+    <li><a [routerLink]="['default']" routerLinkActive="active" >Default Func</a></li>
+    <li><a [routerLink]="['scroll']" routerLinkActive="active" >Auto Scroll</a></li>
+    <li><a [routerLink]="['constrain']" routerLinkActive="active" >Constrain movement</a></li>
+    <li><a [routerLink]="['cursor-style']" routerLinkActive="active" >Cursor style</a></li>
+    <li><a [routerLink]="['events']" routerLinkActive="active" >Events</a></li>
+    <li><a [routerLink]="['handles']" routerLinkActive="active" >Handles</a></li>
+    <li><a [routerLink]="['revert-position']" routerLinkActive="active" >Revert Position</a></li>
+    <li><a [routerLink]="['snap']" routerLinkActive="active" >Snap to Element or grid</a></li>
+    <li><a [routerLink]="['visual-feedback']" routerLinkActive="active" >Visual Feedback</a></li>
+    <li><a [routerLink]="['zonghe']" routerLinkActive="active" >Draggable + Sortable</a></li>
+  </ul>
+
+  <div class="viewport">
+    <router-outlet></router-outlet>
+  </div>
 </div>

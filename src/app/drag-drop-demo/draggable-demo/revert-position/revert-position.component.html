@@ -1,0 +1,9 @@
+<p>
+  TODO: 解决 singletone 模式下不能 用 clone 的方式，也没有 placeholder 和 Preview，
+  需要将这些都改成开放的，而不是像 Angular/CDK那样是和 DragList 绑死的
+</p>
+
+<div class="drag-box" npDraggable (npDragReleased)="onDragReleased($event)">
+  Release revert by event and api
+  <div class="drag-box" *npDragPreview>Preview</div>
+</div>
