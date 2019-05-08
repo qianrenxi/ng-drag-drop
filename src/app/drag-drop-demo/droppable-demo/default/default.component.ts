@@ -7,9 +7,14 @@ import { Component, OnInit } from '@angular/core';
 })
 export class DefaultComponent implements OnInit {
 
+  // cs = [];
+
   constructor() { }
 
   ngOnInit() {
+    // for(let i=0; i < 500; i++) {
+    //   this.cs.push(i);
+    // }
   }
 
 }

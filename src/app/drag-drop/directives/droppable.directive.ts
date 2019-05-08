@@ -1,9 +1,10 @@
-import { Directive, ElementRef, Inject, ViewContainerRef, NgZone, Input, Output, EventEmitter } from '@angular/core';
+import { Directive, ElementRef, Inject, ViewContainerRef, NgZone, Input, Output, EventEmitter, HostBinding } from '@angular/core';
 import { DOCUMENT } from '@angular/platform-browser';
 import { DragDropService } from '../drag-drop.service';
 import { DroppableRef, Tolerance } from '../droppable-ref';
 import { coerceBooleanProperty } from '@angular/cdk/coercion';
 import { DropActiveEvent, DropDeactiveEvent, DropReleasedEvent, DropDroppedEvent, DropEnterEvent, DropExitEvent, DropEndEvent } from '../drop-events';
+import { DraggableRef } from '../draggable-ref';
 
 type Selector = string;
 
@@ -56,6 +57,11 @@ export class DroppableDirective {
   
   // @Output('npDropActive') over = new EventEmitter<any>();
 
+  @HostBinding('class.np-drop-active')
+  get isActive() {
+    return this._dropRef.isActive;
+  }
+
   constructor(
     public element: ElementRef<HTMLElement>,
     @Inject(DOCUMENT) private _document: Document,
@@ -71,11 +77,19 @@ export class DroppableDirective {
   }
 
   private _syncInputs(ref: DroppableRef){
+    ref.enterPredicate = (drag: DraggableRef, drop: DroppableRef) => {
+      return this.enterPredicate(drag.instance, drop.instance);
+    }
 
+    ref.beforeStarted.subscribe(() => {
+      ref.withAccept(this.accept);
+    });
   }
 
   private _handleEvents(ref: DroppableRef){
-
+    ref.actived.subscribe((event) => {
+      this.actived.emit();
+    })
   }
 
 }

@@ -1,0 +1,33 @@
+
+.drop-box {
+  width: 400px;
+  height: 300px;
+  border: 1px solid #999999;
+  background: #cccccc;
+  margin-top: 32px;
+
+  &.np-drop-active {
+    background: #cc9999;
+  }
+
+  &.cs {
+    width: 30px;
+    height: 30px;
+    float: left;
+  }
+}
+
+.drag-box {
+  // clear: both;
+
+  padding: 16px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  width: 240px;
+  background: #ffffff;
+  z-index: +100;
+
+  &:not(.np-drag-dragging) {
+      transition: transform 0.5s;
+  }
+}

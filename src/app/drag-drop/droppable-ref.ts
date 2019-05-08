@@ -2,8 +2,9 @@ import { ElementRef, NgZone } from '@angular/core';
 import { ViewportRuler } from '@angular/cdk/scrolling';
 import { DragDropRegistryService } from './drag-drop-registry.service';
 import { coerceBooleanProperty } from '@angular/cdk/coercion';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject } from 'rxjs';
 import * as _ from 'lodash';
+import { DraggableRef } from './draggable-ref';
 
 /**
  * Specifies which mode to use for testing whether a draggable is hovering over a droppable. Possible values:
@@ -21,11 +22,15 @@ export interface DropRefConfig {
 export class DroppableRef<T = any> {
 
     private _accept: string | ((dragRef, dropRef) => boolean);
-    private _enterPredicate: (dragRef, dropRef) => boolean = () => true; 
+    enterPredicate: (dragRef, dropRef) => boolean = () => true; 
 
-    private _isActive: boolean = false;
+    isActive: boolean = false;
 
     private _subscriptions: Subscription[] = [];
+
+    beforeStarted = new Subject();
+    actived = new Subject();
+    ended = new Subject();
 
     /** Whether starting to drop this element is disabled. */
     get disabled(): boolean {
@@ -55,28 +60,47 @@ export class DroppableRef<T = any> {
         _dragDropRegistry.stopDragging$.subscribe(dragRef => this._anyDragStoped(dragRef));
     }
 
+    withAccept(accept: string | ((dragRef, dropRef) => boolean)) {
+        this._accept = accept;
+    }
+
     despose() {
         this._removeSubscriptions();
     }
 
-    private _anyDragStarted(dragRef) {
-        if (this._canEnter(dragRef)) {
-            this._isActive = false;
-            // TODO: clear drop container
+    private _anyDragStarted(dragRef: DraggableRef) {
+        this.beforeStarted.next();
+
+        // console.log('Any drag started ...')
+        const canActive = this._canActive(dragRef);
+        // console.log('Any drag started isActive', this._accept, isActive)
+
+        if (!canActive) {
+            // TODO: reset dropppable properties
             return ;
         }
 
-        this._isActive = true;
-        // TODO: 优化成 drag start 时触发
+        this.actived.next();
 
-        // 订阅
+        dragRef.started.subscribe((event) => {
+            this.isActive = true;
+            this.actived.next()
+        });
+
+        dragRef.moved.subscribe();
+
+        dragRef.released.subscribe();
+
+        dragRef.ended.subscribe((event) => {
+            this.isActive = false;
+        });
     }
 
     private _anyDragStoped(dragRef) {
-
+        this.isActive = false;
     }
 
-    private _canEnter(dragRef): boolean {
+    private _canActive(dragRef): boolean {
         const accept = this._accept;
         let isAccept = false;
         if (_.isString(accept)) {
@@ -88,8 +112,8 @@ export class DroppableRef<T = any> {
             isAccept = accept(dragRef, this);
         }
 
-        if (isAccept && this._enterPredicate && _.isFunction(this._enterPredicate)) {
-            isAccept = this._enterPredicate(dragRef, this);
+        if (isAccept && this.enterPredicate && _.isFunction(this.enterPredicate)) {
+            isAccept = this.enterPredicate(dragRef, this);
         }
 
         return isAccept;
