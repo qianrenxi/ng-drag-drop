@@ -9,6 +9,8 @@ export class DefaultComponent implements OnInit {
 
   // cs = [];
 
+  dropTimes = 0;
+
   constructor() { }
 
   ngOnInit() {
@@ -17,4 +19,9 @@ export class DefaultComponent implements OnInit {
     // }
   }
 
+  onDroped($event) {
+    const { source, target } = $event;
+    // console.log('Drag dropped', source, target);
+    this.dropTimes++;
+  }
 }

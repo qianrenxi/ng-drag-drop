@@ -1,3 +1,25 @@
-<p>
-  propagation works!
-</p>
+<div class="drag-box" npDraggable>Drag Item</div>
+
+<div class="drop-box" npDroppable (npDrop)="onDroped($event, 'a')" [ngClass]="{'dropped': dropTimes.a > 0 }">
+  Drag Box dropped on this container {{dropTimes.a}}x.
+
+  <div class="drop-box box-inner" npDroppable [npDropGreedy]="true" (npDrop)="onDroped($event, 'ai')"
+    [ngClass]="{'dropped': dropTimes.ai > 0 }">
+    Drag Box Inner dropped on this container {{dropTimes.ai}}x.
+    (greedy)
+  </div>
+</div>
+
+<div style="clear: left; margin-top: 50px;"></div>
+
+<div class="drag-box" npDraggable>Drag Item</div>
+
+<div class="drop-box" npDroppable (npDrop)="onDroped($event, 'a')" [ngClass]="{'dropped': dropTimes.a > 0 }">
+  Drag Box dropped on this container {{dropTimes.a}}x.
+
+  <div class="drop-box box-inner" npDroppable (npDrop)="onDroped($event, 'ai')"
+    [ngClass]="{'dropped': dropTimes.ai > 0 }">
+    Drag Box Inner dropped on this container {{dropTimes.ai}}x.
+    (not greedy)
+  </div>
+</div>

@@ -4,6 +4,6 @@
 
 <div class="drag-box" npDraggable>Drag Item</div>
 
-<div class="drop-box" npDroppable>
-  
+<div class="drop-box" npDroppable (npDrop)="onDroped($event)" [ngClass]="{'dropped': dropTimes > 0 }">
+  Drag Box dropped on this container {{dropTimes}}x.
 </div>

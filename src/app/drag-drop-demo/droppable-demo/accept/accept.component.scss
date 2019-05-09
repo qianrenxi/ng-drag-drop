@@ -1,0 +1,62 @@
+.drop-box {
+    width: 300px;
+    height: 300px;
+    border: 1px solid #999999;
+    background: #cccccc;
+    margin-top: 32px;
+    float: left;
+    margin-right: 32px;
+    position: relative;
+
+    &.np-drop-active {
+        background: #cc9999;
+
+        &.dropped:not(.np-drop-over) {
+            background: #cc9999;
+        }
+    }
+
+    &.np-drop-over {
+        background: #99cc99;
+    }
+
+    &.dropped {
+        &:not(.np-drop-over) {
+            background: #cccc99;
+        }
+    }
+
+    span.flag {
+        font-size: 72px;
+        line-height: 72px;
+        display: inline-block;
+        width: 72px;
+        height: 72px;
+        text-align: center;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        margin-left: -36px;
+        margin-top: -36px;
+        color: rgba($color: #ffffff, $alpha: 0.3);
+        user-select: none;
+        // z-index: 0;
+    }
+}
+
+.drag-box {
+    // clear: both;
+    float: left;
+
+    padding: 16px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    width: 240px;
+    background: #ffffff;
+    z-index: 1000;
+    position: relative;
+
+    &:not(.np-drag-dragging) {
+        transition: transform 0.5s;
+    }
+}

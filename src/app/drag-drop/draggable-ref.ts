@@ -5,6 +5,8 @@ import { ViewportRuler } from '@angular/cdk/scrolling';
 import { Subject, Subscription, Observable, Observer } from 'rxjs';
 import { DragDropRegistryService } from './drag-drop-registry.service';
 import { toggleNativeDragInteractions } from './drag-styling';
+import { DroppableRefInternal } from './droppable-ref';
+import * as _ from 'lodash';
 
 export interface DragRefConfig {
     dragStartThreshold: number;
@@ -100,10 +102,12 @@ export class DraggableRef<T = any> {
 
     lockAxis: 'x' | 'y';
 
+    _revert: boolean | 'invalid' | 'valid';
+
     /** 在准备拖动序列时触发 */
     beforeStarted = new Subject<void>();
     /** 在开始拖放时触发 */
-    started = new Subject<{ source: DraggableRef }>();
+    started = new Subject<{ source: DraggableRef, pointerPosition: Point }>();
     /** 在用户释放拖拽元素时触发，（在加载动画效果之前） */
     released = new Subject<{ source: DraggableRef }>();
     /** 在（容器内）完成拖动时触发 */
@@ -135,8 +139,15 @@ export class DraggableRef<T = any> {
 
     instance: T;
 
+    // 拖放对象，在每次开始拖拽时自行清理
+    private _dropedInternals = new Set<DroppableRefInternal>();
+
+    get hasDroped(): boolean {
+        return !_.isEmpty(this._dropedInternals);
+    }
+
     constructor(
-        element: ElementRef<HTMLElement> | HTMLElement,
+        public element: ElementRef<HTMLElement> | HTMLElement,
         private _config: DragRefConfig,
         private _document: Document,
         private _ngZone: NgZone,
@@ -222,6 +233,15 @@ export class DraggableRef<T = any> {
     
     getRootElement() {
         return this._rootElement;
+    }
+
+    drop(dropRef: DroppableRefInternal) {
+        this._dropedInternals.add(dropRef);
+        this.dropped.next({
+            source: this,
+            target: dropRef
+            // allTargets: this._dropedInternals
+        })
     }
 
     private _pointerDown = (event: MouseEvent | TouchEvent) => {
@@ -310,7 +330,7 @@ export class DraggableRef<T = any> {
         }
 
         this._removeSubscriptions();
-        this._dragDropRegistry.stopDragging(this);
+        // this._dragDropRegistry.stopDragging(this);
 
         // if (this._handles) {
         //     this._rootElement.style.webkitTapHighlightColor = this._rootElementTapHighlight;
@@ -322,8 +342,14 @@ export class DraggableRef<T = any> {
 
         this.released.next({ source: this });
 
-        // TODO
+        // TODO mark to end method
         // if (!this._dropContainer) {
+        if ((this._revert === 'invalid' && !this.hasDroped) ||
+            (this._revert === 'valid' && this.hasDroped) ||
+            this._revert === true) {
+            this.revert();
+        }
+
         this._passiveTransform.x = this._activeTransform.x;
         this._passiveTransform.y = this._activeTransform.y;
         this._ngZone.run(() => this.ended.next({ source: this }));
@@ -334,6 +360,7 @@ export class DraggableRef<T = any> {
 
     private _initializeDragSequence(referenceElement: HTMLElement, event: MouseEvent | TouchEvent) {
         event.stopPropagation();
+        this._dropedInternals.clear();
 
         const isDragging = this.isDragging();
         const isTouchSequence = isTouchEvent(event);
@@ -381,7 +408,8 @@ export class DraggableRef<T = any> {
     }
 
     private _startDragSequence(event: MouseEvent | TouchEvent) {
-        this.started.next({ source: this });
+        const pointerPosition = this._getPointerPositionOnPage(event);
+        this.started.next({ source: this, pointerPosition: pointerPosition });
 
         if (isTouchEvent(event)) {
             this._lastTouchEventTime = Date.now();

@@ -1,3 +1,16 @@
-<p>
-  accept works!
-</p>
+<div class="drag-box" npDraggable>Can be drag but can't be dropped</div>
+<div class="drag-box drop-to-a" npDraggable>Can be dropped A</div>
+<div class="drag-box drop-to-b" npDraggable>Can be dropped A and B</div>
+
+<br style="clear: left;">
+
+<div class="drop-box" npDroppable npDropAccept=".drop-to-a, .drop-to-b" (npDrop)="onDroped($event, 'A')" [ngClass]="{'dropped': aDropTimes > 0 }">
+  Drag Box dropped on this container {{aDropTimes}}x.
+  <span class="flag">A</span>
+</div>
+<div class="drop-box" npDroppable npDropAccept=".drop-to-b" (npDrop)="onDroped($event, 'B')" [ngClass]="{'dropped': bDropTimes > 0 }">
+  Drag Box dropped on this container {{bDropTimes}}x.
+  <span class="flag">B</span>
+</div>
+
+<br style="clear: both;">

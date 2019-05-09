@@ -1,19 +1,26 @@
-import { Directive, ElementRef, Inject, ViewContainerRef, NgZone, Input, Output, EventEmitter, HostBinding } from '@angular/core';
+import { Directive, ElementRef, Inject, ViewContainerRef, NgZone, Input, Output, EventEmitter, HostBinding, OnDestroy, ContentChildren, QueryList, AfterViewInit } from '@angular/core';
 import { DOCUMENT } from '@angular/platform-browser';
 import { DragDropService } from '../drag-drop.service';
 import { DroppableRef, Tolerance } from '../droppable-ref';
 import { coerceBooleanProperty } from '@angular/cdk/coercion';
 import { DropActiveEvent, DropDeactiveEvent, DropReleasedEvent, DropDroppedEvent, DropEnterEvent, DropExitEvent, DropEndEvent } from '../drop-events';
 import { DraggableRef } from '../draggable-ref';
+import { Subject } from 'rxjs';
+import { take, takeUntil, startWith, tap } from 'rxjs/operators';
+import * as _ from 'lodash';
+import { DraggableDirective } from './draggable.directive';
 
 type Selector = string;
 
 @Directive({
   selector: '[npDroppable]'
 })
-export class DroppableDirective {
+export class DroppableDirective implements AfterViewInit, OnDestroy {
+  private _destroyed = new Subject<void>();
 
   _dropRef: DroppableRef<DroppableDirective>;
+
+  @ContentChildren(DroppableDirective, { descendants: true }) childDroppables: QueryList<DroppableDirective>;
 
   /**
    * 控制哪些可拖动元素可被本可拖放对象接受。
@@ -22,13 +29,13 @@ export class DroppableDirective {
    * 注： JQuery UI 用一个属性 `accept` 达到了 关联 和 筛选条件的双重效果。 这里为了简化参数传递，做成复用参数的形式
    */
   @Input('npDropAccept')
-  accept: Selector | ((drag, drop) => boolean) = "*";
+  accept: Selector | ((drag: DraggableDirective, drop: DroppableDirective) => boolean) = "*";
   /** 
    * 方法，用来判定当前拖拽对象是否允许放在本 Droppable 元素上, 效果同传方法到 accept
    * 在 accept 匹配之后会调用，相当于对accept的二次筛选
    */
   @Input('npDropEnterPredicate')
-  enterPredicate: (drag, drop) => boolean = () => true;
+  enterPredicate: (drag: DraggableDirective, drop: DroppableDirective) => boolean = () => true;
 
   @Input('npDropDisabled')
   get disabled(): boolean {
@@ -48,18 +55,23 @@ export class DroppableDirective {
   @Input('npDropTolerance') tolerance: Tolerance = 'intersect';
 
   @Output('npDropActive') actived = new EventEmitter<DropActiveEvent>();
-  @Output('npDropActive') deactived = new EventEmitter<DropDeactiveEvent>();
-  @Output('npDropActive') released = new EventEmitter<DropReleasedEvent>();
-  @Output('npDropActive') droped = new EventEmitter<DropDroppedEvent>();
-  @Output('npDropActive') entered = new EventEmitter<DropEnterEvent>();
-  @Output('npDropActive') exited = new EventEmitter<DropExitEvent>();
-  @Output('npDropActive') ended = new EventEmitter<DropEndEvent>();
-  
+  @Output('npDropDeactive') deactived = new EventEmitter<DropDeactiveEvent>();
+  @Output('npDropRelease') released = new EventEmitter<DropReleasedEvent>();
+  @Output('npDrop') droped = new EventEmitter<DropDroppedEvent>();
+  @Output('npDropEnter') entered = new EventEmitter<DropEnterEvent>();
+  @Output('npDropExit') exited = new EventEmitter<DropExitEvent>();
+  @Output('npDropEnd') ended = new EventEmitter<DropEndEvent>();
+
   // @Output('npDropActive') over = new EventEmitter<any>();
 
   @HostBinding('class.np-drop-active')
-  get isActive() {
+  get isActive(): boolean {
     return this._dropRef.isActive;
+  }
+
+  @HostBinding('class.np-drop-over')
+  get isEntered(): boolean {
+    return this._dropRef.entered;
   }
 
   constructor(
@@ -76,20 +88,98 @@ export class DroppableDirective {
     this._handleEvents(dropRef);
   }
 
-  private _syncInputs(ref: DroppableRef){
-    ref.enterPredicate = (drag: DraggableRef, drop: DroppableRef) => {
-      return this.enterPredicate(drag.instance, drop.instance);
+  ngAfterViewInit() {
+    this._ngZone.onStable.asObservable()
+      .pipe(take(1), takeUntil(this._destroyed))
+      .subscribe(() => {
+        this.childDroppables.changes.pipe(
+          startWith(this.childDroppables),
+          tap((children: QueryList<DroppableDirective>) => {
+            const dropRefs = children
+              .filter(it => it !== this)
+              .map(it => it._dropRef);
+            this._dropRef.withChildDroppables(dropRefs);
+          }),
+          takeUntil(this._destroyed)
+        ).subscribe();
+      });
+  }
+
+  ngOnDestroy() {
+    this._destroyed.next();
+    this._destroyed.complete();
+    this._dropRef.despose();
+  }
+
+  private _syncInputs(ref: DroppableRef) {
+    ref.enterPredicate = (dragRef: DraggableRef, dropRef: DroppableRef) => {
+      return this.enterPredicate(dragRef.instance, dropRef.instance);
     }
 
-    ref.beforeStarted.subscribe(() => {
-      ref.withAccept(this.accept);
+    ref.beforeStarted$.subscribe(() => {
+      if (_.isFunction(this.accept)) {
+        const accept = (dragRef: DraggableRef, dropRef: DroppableRef) => {
+          return _.isFunction(this.accept) && this.accept.call(dragRef.instance, dropRef.instance);
+        };
+        ref.withAccept(accept);
+      } else {
+        ref.withAccept(this.accept);
+      }
+
+      ref.disabled = this.disabled;
+      ref.greedy = coerceBooleanProperty(this.greedy);
+      ref.scope = this.scope;
+      ref.tolerance = this.tolerance;
     });
   }
 
-  private _handleEvents(ref: DroppableRef){
-    ref.actived.subscribe((event) => {
-      this.actived.emit();
-    })
+  private _handleEvents(ref: DroppableRef) {
+    ref.actived$.subscribe((event: any) => {
+      // console.log('active');
+      this.actived.emit({
+        source: event.source.instance,
+        target: this
+      });
+    });
+    ref.deactived$.subscribe((event) => {
+      // console.log('deactive');
+      this.deactived.emit()
+    });
+    ref.entered$.subscribe((event: any) => {
+      // console.log('enter');
+      this.entered.emit({
+        source: event.source.instance,
+        target: this
+      })
+    });
+    ref.exited$.subscribe((event: any) => {
+      // console.log('exit');
+      this.exited.emit({
+        source: event.source.instance,
+        target: this
+      });
+    });
+    ref.released$.subscribe((event: any) => {
+      // console.log('release');
+      this.released.emit({
+        source: event.source.instance,
+        target: this
+      });
+    });
+    ref.droped$.subscribe((event: any) => {
+      // console.log('drop');
+      this.droped.emit({
+        source: event.source.instance,
+        target: this
+      });
+    });
+    ref.ended$.subscribe((event: any) => {
+      // console.log('end');
+      this.ended.emit({
+        source: event.source.instance,
+        target: this
+      });
+    });
   }
 
 }

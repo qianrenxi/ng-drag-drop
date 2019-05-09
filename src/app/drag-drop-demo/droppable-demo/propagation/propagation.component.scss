@@ -1,0 +1,46 @@
+.drop-box {
+    width: 400px;
+    height: 300px;
+    border: 1px solid #999999;
+    background: #cccccc;
+    margin-top: 32px;
+
+    &.np-drop-active {
+        background: #cc9999;
+
+        &.dropped:not(.np-drop-over) {
+            background: #cc9999;
+        }
+    }
+
+    &.np-drop-over {
+        background: #99cc99;
+    }
+
+    &.dropped {
+        &:not(.np-drop-over) {
+            background: #cccc99;
+        }
+    }
+
+   &.box-inner {
+       width: 320px;
+       height: 200px;
+       margin-left: 180px;
+   }
+}
+
+.drag-box {
+    // clear: both;
+
+    padding: 16px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    width: 240px;
+    background: #ffffff;
+    z-index: +100;
+
+    &:not(.np-drag-dragging) {
+        transition: transform 0.5s;
+    }
+}

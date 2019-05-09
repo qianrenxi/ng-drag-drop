@@ -7,9 +7,17 @@ import { Component, OnInit } from '@angular/core';
 })
 export class RevertComponent implements OnInit {
 
+  dropTimes = 0;
+
   constructor() { }
 
   ngOnInit() {
+  }
+
+  onDroped($event) {
+    const { source, target } = $event;
+    // console.log('Drag dropped', source, target);
+    this.dropTimes++;
   }
 
 }

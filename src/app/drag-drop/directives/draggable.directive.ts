@@ -35,6 +35,8 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
 
   @Input('npLockAxis') lockAxis: 'x' | 'y';
 
+  @Input('npDragRevert') _revert: boolean | 'invalid' | 'valid';
+
   @Input('npDragRootElement') rootElementSelector: string;
 
   @Input('npDragBoundary') boundaryElementSelector: string;
@@ -154,6 +156,7 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
         viewContainer: this._viewContainerRef,
       } : null;
 
+      ref._revert = (this._revert === 'valid' || this._revert === 'invalid') ? this._revert : coerceBooleanProperty(this._revert);
       ref.disabled = this.disabled;
       ref.lockAxis = this.lockAxis;
       ref.withBoundaryElement(this._getBoundaryElement())

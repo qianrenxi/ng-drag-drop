@@ -1,3 +1,11 @@
 <p>
-  revert works!
+  revert
 </p>
+
+<div class="drag-box" npDraggable npDragRevert>Drag Item Revert anyWay</div>
+<div class="drag-box" npDraggable npDragRevert="invalid">Drag Item Revert Invalid</div>
+<div class="drag-box" npDraggable npDragRevert="valid">Drag Item Revert Valid</div>
+
+<div class="drop-box" npDroppable (npDrop)="onDroped($event)" [ngClass]="{'dropped': dropTimes > 0 }">
+  Drag Box dropped on this container {{dropTimes}}x.
+</div>
