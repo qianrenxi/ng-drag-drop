@@ -341,17 +341,19 @@ export class DraggableRef<T = any> {
         }
 
         this.released.next({ source: this });
+        this._dragDropRegistry.stopDragging(this);
 
         // TODO mark to end method
         // if (!this._dropContainer) {
+        this._passiveTransform.x = this._activeTransform.x;
+        this._passiveTransform.y = this._activeTransform.y;
+
         if ((this._revert === 'invalid' && !this.hasDroped) ||
             (this._revert === 'valid' && this.hasDroped) ||
             this._revert === true) {
             this.revert();
         }
 
-        this._passiveTransform.x = this._activeTransform.x;
-        this._passiveTransform.y = this._activeTransform.y;
         this._ngZone.run(() => this.ended.next({ source: this }));
         this._dragDropRegistry.stopDragging(this);
         //     return;

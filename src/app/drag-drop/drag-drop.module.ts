@@ -6,6 +6,8 @@ import { DragHandleDirective } from './directives/drag-handle.directive';
 import { DragPlaceholderDirective } from './directives/drag-placeholder.directive';
 import { DragPreviewDirective } from './directives/drag-preview.directive';
 import { DroppableDirective } from './directives/droppable.directive';
+import { SortableDirective } from './directives/sortable.directive';
+import { SortableItemDirective } from './directives/sortable-item.directive';
 
 @NgModule({
   imports: [
@@ -16,14 +18,18 @@ import { DroppableDirective } from './directives/droppable.directive';
     DragHandleDirective,
     DragPlaceholderDirective,
     DragPreviewDirective,
-    DroppableDirective
+    DroppableDirective,
+    SortableDirective,
+    SortableItemDirective
   ],
   exports: [
     DraggableDirective,
     DragHandleDirective,
     DragPlaceholderDirective,
     DragPreviewDirective,
-    DroppableDirective
+    DroppableDirective,
+    SortableDirective,
+    SortableItemDirective
   ],
   providers: [
     DragDropService,

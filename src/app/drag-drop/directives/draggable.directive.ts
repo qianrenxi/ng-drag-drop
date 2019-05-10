@@ -21,7 +21,7 @@ import { DragStartEvent, DragReleaseEvent, DragEndEvent, DragEnterEvent, DragExi
   ]
 })
 export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, OnDestroy {
-  private _destroyed = new Subject<void>();
+  protected _destroyed = new Subject<void>();
 
   _dragRef: DraggableRef<DraggableDirective<D>>;
 
@@ -49,7 +49,7 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
     this._disabled = coerceBooleanProperty(value);
     this._dragRef.disabled = this._disabled;
   }
-  private _disabled = false;
+  protected _disabled = false;
 
   @Output('npDragStarted') started = new EventEmitter<DragStartEvent>();
   @Output('npDragReleased') released = new EventEmitter<DragReleaseEvent>();
@@ -78,9 +78,9 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
 
   constructor(
     public element: ElementRef<HTMLElement>,
-    @Inject(DOCUMENT) private _document: Document,
-    private _viewContainerRef: ViewContainerRef,
-    private _ngZone: NgZone,
+    @Inject(DOCUMENT) protected _document: Document,
+    protected _viewContainerRef: ViewContainerRef,
+    protected _ngZone: NgZone,
     dragDrop: DragDropService
   ) {
     const dragRef = this._dragRef = dragDrop.createDrag<DraggableDirective>(element);
@@ -139,7 +139,7 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
   }
 
   /** 在准备拖放时将Draggable的元素输入与底层DraggableRef做同步 */
-  private _syncInputs(ref: DraggableRef<DraggableDirective<D>>) {
+  protected _syncInputs(ref: DraggableRef<DraggableDirective<D>>) {
     ref.beforeStarted.subscribe(() => {
       if (ref.isDragging()) {
         return;
@@ -165,7 +165,7 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
     });
   }
 
-  private _handleEvents(ref: DraggableRef<DraggableDirective<D>>) {
+  protected _handleEvents(ref: DraggableRef<DraggableDirective<D>>) {
     ref.started.subscribe(() => {
       this.started.emit({source: this});
     });
@@ -198,12 +198,12 @@ export class DraggableDirective<D = any> implements AfterViewInit, OnChanges, On
     });
   }
 
-  private _getBoundaryElement(): HTMLElement {
+  protected _getBoundaryElement(): HTMLElement {
     const selector = this.boundaryElementSelector;
     return selector ? getClosestMatchingAncestor(this.element.nativeElement, selector) : null;
   }
 
-  private _updateRootElement() {
+  protected _updateRootElement() {
     const element = this.element.nativeElement;
     const rootElement = this.rootElementSelector ?
       getClosestMatchingAncestor(element, this.rootElementSelector) : element;

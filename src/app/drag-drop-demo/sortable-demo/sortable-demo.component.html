@@ -1,0 +1,15 @@
+<div class="demo">
+
+    <ul class="funcs-menu">
+      <li><a [routerLink]="['default']" routerLinkActive="active" >Default functionality</a></li>
+      <li><a [routerLink]="['accept']" routerLinkActive="active" >Accept</a></li>
+      <li><a [routerLink]="['propagation']" routerLinkActive="active" >Prevent propagation</a></li>
+      <li><a [routerLink]="['revert']" routerLinkActive="active" >Revert draggable position</a></li>
+      <li><a [routerLink]="['photo-manager']" routerLinkActive="active" >Simple photo manager</a></li>
+      <li><a [routerLink]="['visual-feedback']" routerLinkActive="active" >Visual Feedback</a></li>
+    </ul>
+  
+    <div class="viewport">
+      <router-outlet></router-outlet>
+    </div>
+  </div>

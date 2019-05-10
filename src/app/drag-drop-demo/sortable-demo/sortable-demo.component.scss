@@ -1,0 +1,19 @@
+.demo {
+
+    >div.viewport {
+        margin-right: 240px;
+    }
+
+    >ul.funcs-menu {
+        float: right;
+        min-width: 200px;
+    }
+}
+
+.funcs-menu {
+    >li>a {
+        &.active {
+            color: green;
+        }
+    }
+}
