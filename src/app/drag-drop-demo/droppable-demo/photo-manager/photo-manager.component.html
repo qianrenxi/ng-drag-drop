@@ -1,3 +1,33 @@
-<p>
-  photo-manager works!
-</p>
+<div class="photo-wrap">
+  <div id="gallery" class="drop-box" npDroppable (npDrop)="onGalleryDrop($event)" npDropAccept=".photo-item.trashed">
+    <h4 class="title">Gallery</h4>
+
+    <ul class="gallery">
+      <li *ngFor="let item of gallery" class="photo-item gallery" npDraggable [npDragData]="item" npDragRevert="invalid">
+        <h5 class="title">{{item.title}}</h5>
+        <img [src]="item.thumbnail" alt="The peaks of High Tatras" width="96" height="72">
+        <div class="extras">
+          <a title="View larger image" class="zoomin">View</a>
+          <a title="Delete this image" class="trash">Delete</a>
+        </div>
+      </li>
+    </ul>
+
+  </div>
+
+  <div id="trash" class="drop-box"  npDroppable (npDrop)="onTrashDrop($event)" npDropAccept=".photo-item.gallery">
+    <h4 class="title">Trash</h4>
+
+    <ul class="gallery">
+        <li *ngFor="let item of trashed" class="photo-item trashed"  npDraggable [npDragData]="item" npDragRevert="invalid">
+          <h5 class="title">{{item.title}}</h5>
+          <img [src]="item.thumbnail" alt="The peaks of High Tatras" width="48" height="36">
+          <!-- <div class="extras"> -->
+            <!-- <a title="View larger image" class="zoomin">View</a> -->
+            <!-- <a title="Recycle this image" class="trash">Rec</a> -->
+          <!-- </div> -->
+        </li>
+      </ul>
+  </div>
+
+</div>
