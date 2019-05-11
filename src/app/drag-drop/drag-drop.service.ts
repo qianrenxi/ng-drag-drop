@@ -4,6 +4,8 @@ import { ViewportRuler } from '@angular/cdk/scrolling';
 import { DragDropRegistryService } from './drag-drop-registry.service';
 import { DraggableRef, DragRefConfig } from './draggable-ref';
 import { DropRefConfig, DroppableRef } from './droppable-ref';
+import { SortableRef } from './sortable-ref';
+import { _document } from '@angular/platform-browser/src/browser';
 
 
 const DEFAULT_DRAG_CONFIG = <DragRefConfig>{
@@ -42,5 +44,9 @@ export class DragDropService {
     createDrop<T = any>(element: ElementRef<HTMLElement> | HTMLElement,
         config: DropRefConfig = DEFAULT_DROP_CONFIG): DroppableRef<T> {
         return new DroppableRef<T>(element, config, this._document, this._ngZone, this._viewportRuler, this._dragDropRegistry);
+    }
+
+    createSort<T = any> (element: ElementRef<HTMLElement> | HTMLElement) {
+        return new SortableRef<T>(element, this._document, this._ngZone, this._viewportRuler, this._dragDropRegistry);
     }
 }

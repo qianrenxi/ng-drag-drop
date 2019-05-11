@@ -3,5 +3,10 @@
 </div> -->
 
 <ul class="sortable-box" npSortable>
-  <li *ngFor="let item of items" class="sortable-item" npSortableItem>{{item}}</li>
+  <li *ngFor="let item of items" class="sortable-item" npSortableItem>{{item}}
+    <ng-template npDragPlaceholder>
+      <li>{{item}}</li>
+    </ng-template>
+    
+  </li>
 </ul>

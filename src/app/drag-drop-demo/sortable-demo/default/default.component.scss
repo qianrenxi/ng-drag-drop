@@ -32,5 +32,9 @@ ul {
         &:not(.np-drag-dragging) {
             transition: transform 0.5s;
         }
+
+        &.np-drag-dragging {
+            z-index: +100;
+        }
     }
 }
