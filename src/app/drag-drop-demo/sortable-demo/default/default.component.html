@@ -2,11 +2,11 @@
   <div *ngFor="let item of items" class="sortable-item">{{item}}</div>
 </div> -->
 
-<ul class="sortable-box" npSortable>
-  <li *ngFor="let item of items" class="sortable-item" npSortableItem>{{item}}
-    <ng-template npDragPlaceholder>
+<ul class="sortable-box" npSortable (npSortDrop)="onSortDrop($event)">
+  <li *ngFor="let item of items" class="sortable-item" npSortableItem>
+    {{item}}
+    <!-- <ng-template npDragPlaceholder>
       <li>{{item}}</li>
-    </ng-template>
-    
+    </ng-template> -->
   </li>
 </ul>

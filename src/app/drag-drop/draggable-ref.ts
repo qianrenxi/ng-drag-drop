@@ -4,9 +4,10 @@ import { normalizePassiveListenerOptions } from '@angular/cdk/platform';
 import { ViewportRuler } from '@angular/cdk/scrolling';
 import { Subject, Subscription, Observable, Observer } from 'rxjs';
 import { DragDropRegistryService } from './drag-drop-registry.service';
-import { toggleNativeDragInteractions } from './drag-styling';
+import { toggleNativeDragInteractions, extendStyles } from './drag-styling';
 import { DroppableRefInternal } from './droppable-ref';
 import * as _ from 'lodash';
+import { getTransformTransitionDurationInMs } from './transition-duration';
 
 export interface DragRefConfig {
     dragStartThreshold: number;
@@ -73,6 +74,9 @@ export class DraggableRef<T = any> {
     private _boundaryRect?: ClientRect | undefined;
     private _pickupPositionInElement: Point;
     private _pickupPositionOnPage: Point;
+
+    private _nextSibling: Node | null;
+    private _initialContainerElement: HTMLElement | null; // Node | null;
 
     private _moveEvents = new Subject<{
         source: DraggableRef;
@@ -214,25 +218,39 @@ export class DraggableRef<T = any> {
     /** Removes the dragging functionality from the DOM element. */
     dispose() {
         this._removeRootElementListeners(this._rootElement);
-        
+
         if (this.isDragging()) {
             removeElement(this._rootElement);
         }
 
         this._dragDropRegistry.removeDragItem(this);
         // TODO: 
-        
+
     }
 
     /** Resets a standalone drag item to its initial position. */
     revert() {
         this._rootElement.style.transform = this._initialTransform || '';
-        this._activeTransform = {x: 0, y: 0};
-        this._passiveTransform = {x: 0, y: 0};
+        this._activeTransform = { x: 0, y: 0 };
+        this._passiveTransform = { x: 0, y: 0 };
     }
-    
+
     getRootElement() {
         return this._rootElement;
+    }
+
+    getNextSibling(): Node | null {
+        if (!this._nextSibling) {
+            this._nextSibling = this._rootElement.nextSibling;
+        }
+        return this._nextSibling;
+    }
+
+    getPlaceholder() {
+        if (!this._placeholder) {
+            this._placeholder = this._createPlaceholderElement();
+        }
+        return this._placeholder;
     }
 
     drop(dropRef: DroppableRefInternal) {
@@ -242,6 +260,26 @@ export class DraggableRef<T = any> {
             target: dropRef
             // allTargets: this._dropedInternals
         })
+    }
+
+    private get _dropContainer() {
+        return !!this._placeholder || !!this._preview;
+    }
+
+    initDragHelpers(startContainer?: any) {
+        const element = this._rootElement;
+
+        // Grab the `nextSibling` before the preview and placeholder
+        // have been created so we don't get the preview by accident.
+        this._nextSibling = element.nextSibling;
+        this._initialContainerElement = element.parentElement;
+
+        const preview = this._preview = this._createPreviewElement();
+        const placeholder = this._placeholder = this._createPlaceholderElement();
+
+        element.style.display = 'none';
+        this._document.body.appendChild(element.parentNode!.replaceChild(placeholder, element));
+        this._document.body.appendChild(preview);
     }
 
     private _pointerDown = (event: MouseEvent | TouchEvent) => {
@@ -291,26 +329,25 @@ export class DraggableRef<T = any> {
         event.preventDefault();
         this._updatePointerDirectionDelta(constrainedPointerPosition);
 
-        // TODO
-        // if (this._dropContainer) {
-        //     this._updateActiveDropContainer(constrainedPointerPosition);
-        // } else {
-        const activeTransform = this._activeTransform;
-        activeTransform.x =
-            constrainedPointerPosition.x - this._pickupPositionOnPage.x + this._passiveTransform.x;
-        activeTransform.y =
-            constrainedPointerPosition.y - this._pickupPositionOnPage.y + this._passiveTransform.y;
-        const transform = getTransform(activeTransform.x, activeTransform.y);
+        if (this._dropContainer) {
+            this._updateActiveDropContainer(constrainedPointerPosition);
+        } else {
+            const activeTransform = this._activeTransform;
+            activeTransform.x =
+                constrainedPointerPosition.x - this._pickupPositionOnPage.x + this._passiveTransform.x;
+            activeTransform.y =
+                constrainedPointerPosition.y - this._pickupPositionOnPage.y + this._passiveTransform.y;
+            const transform = getTransform(activeTransform.x, activeTransform.y);
 
-        this._rootElement.style.transform = this._initialTransform ?
-            transform + ' ' + this._initialTransform : transform;
+            this._rootElement.style.transform = this._initialTransform ?
+                transform + ' ' + this._initialTransform : transform;
 
-        // Apply transform as attribute if dragging and svg element to work for IE
-        if (typeof SVGElement !== 'undefined' && this._rootElement instanceof SVGElement) {
-            const appliedTransform = `translate(${activeTransform.x} ${activeTransform.y})`;
-            this._rootElement.setAttribute('transform', appliedTransform);
+            // Apply transform as attribute if dragging and svg element to work for IE
+            if (typeof SVGElement !== 'undefined' && this._rootElement instanceof SVGElement) {
+                const appliedTransform = `translate(${activeTransform.x} ${activeTransform.y})`;
+                this._rootElement.setAttribute('transform', appliedTransform);
+            }
         }
-        // }
 
         if (this._moveEventSubscriptions > 0) {
             this._ngZone.run(() => {
@@ -344,20 +381,25 @@ export class DraggableRef<T = any> {
         this._dragDropRegistry.stopDragging(this);
 
         // TODO mark to end method
-        // if (!this._dropContainer) {
-        this._passiveTransform.x = this._activeTransform.x;
-        this._passiveTransform.y = this._activeTransform.y;
+        if (!this._dropContainer) {
+            this._passiveTransform.x = this._activeTransform.x;
+            this._passiveTransform.y = this._activeTransform.y;
 
-        if ((this._revert === 'invalid' && !this.hasDroped) ||
-            (this._revert === 'valid' && this.hasDroped) ||
-            this._revert === true) {
-            this.revert();
+            if ((this._revert === 'invalid' && !this.hasDroped) ||
+                (this._revert === 'valid' && this.hasDroped) ||
+                this._revert === true) {
+                this.revert();
+            }
+
+            this._ngZone.run(() => this.ended.next({ source: this }));
+            this._dragDropRegistry.stopDragging(this);
+            return;
         }
 
-        this._ngZone.run(() => this.ended.next({ source: this }));
-        this._dragDropRegistry.stopDragging(this);
-        //     return;
-        // }
+        this._animatePreviewToPlaceholder().then(() => {
+            this._cleanupDragArtifacts(event);
+            this._dragDropRegistry.stopDragging(this);
+        });
     }
 
     private _initializeDragSequence(referenceElement: HTMLElement, event: MouseEvent | TouchEvent) {
@@ -417,10 +459,229 @@ export class DraggableRef<T = any> {
             this._lastTouchEventTime = Date.now();
         }
 
-        // TODO
+        // Extract to method `initDragHelpers`, called by owner (container)
         // if (this._dropContainer) {
 
         // }
+    }
+
+    /** Cleans up the DOM artifacts that were added to facilitate the element being dragged. */
+    private _cleanupDragArtifacts(event: MouseEvent | TouchEvent) {
+        // Restore the element's visibility and insert it at its old position in the DOM.
+        // It's important that we maintain the position, because moving the element around in the DOM
+        // can throw off `NgFor` which does smart diffing and re-creates elements only when necessary,
+        // while moving the existing elements in all other cases.
+        this._rootElement.style.display = '';
+
+        if (this._nextSibling) {
+            this._nextSibling.parentNode!.insertBefore(this._rootElement, this._nextSibling);
+        } else {
+            // this._initialContainer.element.appendChild(this._rootElement);
+            this._initialContainerElement.appendChild(this._rootElement);
+        }
+
+        this._destroyPreview();
+        this._destroyPlaceholder();
+        this._boundaryRect = this._previewRect = undefined;
+
+        // Re-enter the NgZone since we bound `document` events on the outside.
+        this._ngZone.run(() => {
+            // const container = this._dropContainer!;
+            // const currentIndex = container.getItemIndex(this);
+            // const { x, y } = this._getPointerPositionOnPage(event);
+            // const isPointerOverContainer = container._isOverContainer(x, y);
+
+            this.ended.next({ source: this });
+            // this.dropped.next({
+            //     item: this,
+            //     currentIndex,
+            //     previousIndex: this._initialContainer.getItemIndex(this),
+            //     container: container,
+            //     previousContainer: this._initialContainer,
+            //     isPointerOverContainer
+            // });
+            // container.drop(this, currentIndex, this._initialContainer, isPointerOverContainer);
+            // this._dropContainer = this._initialContainer;
+        });
+    }
+
+    /**
+     * Updates the item's position in its drop container, or moves it
+     * into a new one, depending on its current drag position.
+     */
+    private _updateActiveDropContainer({ x, y }: Point) {
+        // // Drop container that draggable has been moved into.
+        // let newContainer = this._dropContainer!._getSiblingContainerFromPosition(this, x, y) ||
+        //     this._initialContainer._getSiblingContainerFromPosition(this, x, y);
+
+        // // If we couldn't find a new container to move the item into, and the item has left it's
+        // // initial container, check whether the it's over the initial container. This handles the
+        // // case where two containers are connected one way and the user tries to undo dragging an
+        // // item into a new container.
+        // if (!newContainer && this._dropContainer !== this._initialContainer &&
+        //     this._initialContainer._isOverContainer(x, y)) {
+        //     newContainer = this._initialContainer;
+        // }
+
+        // if (newContainer && newContainer !== this._dropContainer) {
+        //     this._ngZone.run(() => {
+        //         // Notify the old container that the item has left.
+        //         this.exited.next({ item: this, container: this._dropContainer! });
+        //         this._dropContainer!.exit(this);
+        //         // Notify the new container that the item has entered.
+        //         this.entered.next({ item: this, container: newContainer! });
+        //         this._dropContainer = newContainer!;
+        //         this._dropContainer.enter(this, x, y);
+        //     });
+        // }
+
+        // this._dropContainer!._sortItem(this, x, y, this._pointerDirectionDelta);
+        this._preview.style.transform =
+            getTransform(x - this._pickupPositionInElement.x, y - this._pickupPositionInElement.y);
+    }
+
+    /**
+     * Creates the element that will be rendered next to the user's pointer
+     * and will be used as a preview of the element that is being dragged.
+     */
+    private _createPreviewElement(): HTMLElement {
+        const previewConfig = this._previewTemplate;
+        const previewTemplate = previewConfig ? previewConfig.template : null;
+        let preview: HTMLElement;
+
+        if (previewTemplate) {
+            const viewRef = previewConfig!.viewContainer.createEmbeddedView(previewTemplate,
+                previewConfig!.context);
+            preview = viewRef.rootNodes[0];
+            this._previewRef = viewRef;
+            preview.style.transform =
+                getTransform(this._pickupPositionOnPage.x, this._pickupPositionOnPage.y);
+        } else {
+            const element = this._rootElement;
+            const elementRect = element.getBoundingClientRect();
+
+            preview = deepCloneNode(element);
+            preview.style.width = `${elementRect.width}px`;
+            preview.style.height = `${elementRect.height}px`;
+            preview.style.transform = getTransform(elementRect.left, elementRect.top);
+        }
+
+        extendStyles(preview.style, {
+            // It's important that we disable the pointer events on the preview, because
+            // it can throw off the `document.elementFromPoint` calls in the `CdkDropList`.
+            pointerEvents: 'none',
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            zIndex: '1000'
+        });
+
+        toggleNativeDragInteractions(preview, false);
+
+        preview.classList.add('np-drag-preview');
+        // preview.setAttribute('dir', this._direction);
+
+        return preview;
+    }
+
+    /**
+     * Animates the preview element from its current position to the location of the drop placeholder.
+     * @returns Promise that resolves when the animation completes.
+     */
+    private _animatePreviewToPlaceholder(): Promise<void> {
+        // If the user hasn't moved yet, the transitionend event won't fire.
+        if (!this._hasMoved) {
+            return Promise.resolve();
+        }
+
+        const placeholderRect = this._placeholder.getBoundingClientRect();
+
+        // Apply the class that adds a transition to the preview.
+        this._preview.classList.add('cdk-drag-animating');
+
+        // Move the preview to the placeholder position.
+        this._preview.style.transform = getTransform(placeholderRect.left, placeholderRect.top);
+
+        // If the element doesn't have a `transition`, the `transitionend` event won't fire. Since
+        // we need to trigger a style recalculation in order for the `cdk-drag-animating` class to
+        // apply its style, we take advantage of the available info to figure out whether we need to
+        // bind the event in the first place.
+        const duration = getTransformTransitionDurationInMs(this._preview);
+
+        if (duration === 0) {
+            return Promise.resolve();
+        }
+
+        return this._ngZone.runOutsideAngular(() => {
+            return new Promise(resolve => {
+                const handler = ((event: TransitionEvent) => {
+                    if (!event || (event.target === this._preview && event.propertyName === 'transform')) {
+                        this._preview.removeEventListener('transitionend', handler);
+                        resolve();
+                        clearTimeout(timeout);
+                    }
+                }) as EventListenerOrEventListenerObject;
+
+                // If a transition is short enough, the browser might not fire the `transitionend` event.
+                // Since we know how long it's supposed to take, add a timeout with a 50% buffer that'll
+                // fire if the transition hasn't completed when it was supposed to.
+                const timeout = setTimeout(handler as Function, duration * 1.5);
+                this._preview.addEventListener('transitionend', handler);
+            });
+        });
+    }
+
+
+    /** Creates an element that will be shown instead of the current element while dragging. */
+    private _createPlaceholderElement(): HTMLElement {
+        // 避免重复创建，导致对象引用不一致
+        // if (this._placeholder) {
+        //     return this._placeholder;
+        // }
+
+        const placeholderConfig = this._placeholderTemplate;
+        const placeholderTemplate = placeholderConfig ? placeholderConfig.template : null;
+        let placeholder: HTMLElement;
+
+        if (placeholderTemplate) {
+            this._placeholderRef = placeholderConfig!.viewContainer.createEmbeddedView(
+                placeholderTemplate,
+                placeholderConfig!.context
+            );
+            placeholder = this._placeholderRef.rootNodes[0];
+        } else {
+            placeholder = deepCloneNode(this._rootElement);
+            // console.log(this._rootElement, placeholder)
+        }
+
+        placeholder.classList.add('np-drag-placeholder');
+        return placeholder;
+    }
+
+    /** Destroys the preview element and its ViewRef. */
+    private _destroyPreview() {
+        if (this._preview) {
+            removeElement(this._preview);
+        }
+
+        if (this._previewRef) {
+            this._previewRef.destroy();
+        }
+
+        this._preview = this._previewRef = null!;
+    }
+
+    /** Destroys the placeholder element and its ViewRef. */
+    private _destroyPlaceholder() {
+        if (this._placeholder) {
+            removeElement(this._placeholder);
+        }
+
+        if (this._placeholderRef) {
+            this._placeholderRef.destroy();
+        }
+
+        this._placeholder = this._placeholderRef = null!;
     }
 
     private _getPointerPositionInElement(referenceElement: HTMLElement,

@@ -1,4 +1,4 @@
-import { Directive, ContentChildren, QueryList, AfterContentInit, NgZone, OnDestroy, ElementRef, Inject } from '@angular/core';
+import { Directive, ContentChildren, QueryList, AfterContentInit, NgZone, OnDestroy, ElementRef, Inject, Renderer2, Output, EventEmitter } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { ViewportRuler } from '@angular/cdk/scrolling';
 import { pipe, Subject } from 'rxjs';
@@ -19,15 +19,19 @@ export class SortableDirective implements AfterContentInit, OnDestroy {
 
   @ContentChildren(SortableItemDirective) items: QueryList<SortableItemDirective>;
 
+  @Output('npSortDrop')
+  dropped = new EventEmitter();
+
   constructor(
     public element: ElementRef<HTMLElement>,
     @Inject(DOCUMENT) private _document: Document,
     private _ngZone: NgZone,
     private _viewportRuler: ViewportRuler,
     private _dragDropRegistry: DragDropRegistryService<any, any>,
+    private _renderer: Renderer2,
     dragDrop: DragDropService
   ) {
-    const sortRef = this._sortRef = dragDrop.createSort(element);
+    const sortRef = this._sortRef = dragDrop.createSort(element, _renderer);
 
     sortRef.instance = this;
     this._syncInputs(sortRef);
@@ -50,5 +54,17 @@ export class SortableDirective implements AfterContentInit, OnDestroy {
   }
 
   private _syncInputs(ref: SortableRef<SortableDirective>) {}
-  private _handleEvents(ref: SortableRef<SortableDirective>) {}
+  private _handleEvents(ref: SortableRef<SortableDirective>) {
+    ref.dropped.subscribe((event) => {
+      const {item, container, currentIndex, previousContainer, previousIndex, isPointerOverContainer} = event;
+      this.dropped.emit({
+        item: item.instance,
+        container: this,
+        currentIndex,
+        previousContainer: previousContainer.instance,
+        previousIndex,
+        isPointerOverContainer,
+      });
+    });
+  }
 }

@@ -1,4 +1,4 @@
-import { Injectable, Inject, NgZone, ElementRef } from '@angular/core';
+import { Injectable, Inject, NgZone, ElementRef, Renderer2 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { ViewportRuler } from '@angular/cdk/scrolling';
 import { DragDropRegistryService } from './drag-drop-registry.service';
@@ -29,7 +29,7 @@ export class DragDropService {
         @Inject(DOCUMENT) private _document: any,
         private _ngZone: NgZone,
         private _viewportRuler: ViewportRuler,
-        private _dragDropRegistry: DragDropRegistryService<DraggableRef, any>
+        private _dragDropRegistry: DragDropRegistryService<DraggableRef, any>,
     ) { }
 
     /**
@@ -46,7 +46,7 @@ export class DragDropService {
         return new DroppableRef<T>(element, config, this._document, this._ngZone, this._viewportRuler, this._dragDropRegistry);
     }
 
-    createSort<T = any> (element: ElementRef<HTMLElement> | HTMLElement) {
-        return new SortableRef<T>(element, this._document, this._ngZone, this._viewportRuler, this._dragDropRegistry);
+    createSort<T = any> (element: ElementRef<HTMLElement> | HTMLElement, renderer: Renderer2) {
+        return new SortableRef<T>(element, this._document, this._ngZone, this._viewportRuler, this._dragDropRegistry, renderer);
     }
 }
