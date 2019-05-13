@@ -8,11 +8,15 @@ import { SortableItemDirective } from './sortable-item.directive';
 import { SortableItemRef, SortableRef } from '../sortable-ref';
 import { DragDropRegistryService } from '../drag-drop-registry.service';
 import { DragDropService } from '../drag-drop.service';
+import * as _ from 'lodash';
+import { coerceElement } from '@angular/cdk/coercion';
 
 @Directive({
   selector: '[npSortable]'
 })
 export class SortableDirective implements AfterContentInit, OnDestroy {
+  private static _globalSortables: SortableDirective[] = [];
+
   private _destroyed = new Subject();
   
   _sortRef: SortableRef<SortableDirective>;
@@ -65,6 +69,8 @@ export class SortableDirective implements AfterContentInit, OnDestroy {
     sortRef.instance = this;
     this._syncInputs(sortRef);
     this._handleEvents(sortRef);
+
+    SortableDirective._globalSortables.push(this);
   }
 
   ngAfterContentInit() {
@@ -80,9 +86,20 @@ export class SortableDirective implements AfterContentInit, OnDestroy {
   ngOnDestroy() {
     this._destroyed.next();
     this._destroyed.complete();
+
+    _.remove(SortableDirective._globalSortables, this);
   }
 
-  private _syncInputs(ref: SortableRef<SortableDirective>) {}
+  private _syncInputs(ref: SortableRef<SortableDirective>) {
+    ref.beforStarted.subscribe(() => {
+      const siblings = SortableDirective._globalSortables
+        .filter(it => isElementMatchSelector(coerceElement(it.element), this.connectWith))
+        .map(it => it._sortRef);
+
+      ref.connectWith(siblings);
+    });
+  }
+
   private _handleEvents(ref: SortableRef<SortableDirective>) {
     ref.dropped$.subscribe((event) => {
       const {item, container, currentIndex, previousContainer, previousIndex, isPointerOverContainer} = event;
@@ -96,4 +113,9 @@ export class SortableDirective implements AfterContentInit, OnDestroy {
       });
     });
   }
+}
+
+function isElementMatchSelector(element: HTMLElement, selector: string) {
+  return element.matches ? element.matches(selector) :
+      (element as any).msMatchesSelector(selector);
 }

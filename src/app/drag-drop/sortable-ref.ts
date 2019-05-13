@@ -31,11 +31,16 @@ export class SortableRef<T = any> {
 
     private _itemPositions: CachedItemPosition[];
 
+    private _siblings: SortableRef[];
+    private _activeSiblings: SortableRef[];
+    private _isActivated: boolean = false;
+
     axis: 'x' | 'y';
     // floating: boolean = false;
 
     instance: T;
 
+    beforStarted = new Subject<any>();
 
     activated$ = new Subject<any>();
     /** Before stop */
@@ -81,6 +86,11 @@ export class SortableRef<T = any> {
         return this;
     }
 
+    connectWith(sortables: SortableRef[]): this {
+        this._siblings = sortables.slice();
+        return this;
+    }
+
     despose() {
         this._anyDragStartSubscription.unsubscribe();
         this._anyDragStopSubscription.unsubscribe();
@@ -90,6 +100,20 @@ export class SortableRef<T = any> {
 
     getIndexOfItem(item: SortableItemRef) {
         return _.indexOf(this._items, item);
+    }
+
+    isActivated() {
+        return this._isActivated;
+    }
+
+    markAsActivated(event) {
+        this._isActivated = true;
+        this.activated$.next(event);
+    }
+
+    markAsDeactivated(event) {
+        this._isActivated = false;
+        this.deactivated$.next(event);
     }
 
     private _anyDragStarted(dragRef: SortableItemRef) {
@@ -112,19 +136,26 @@ export class SortableRef<T = any> {
     }
 
     private _anyDragStoped(dragRef: SortableItemRef) {
-
+        // this._removeDragSubscriptions();
     }
 
 
     private _handleDragStart(event) {
+        this.beforStarted.next();
+        
+        // TODO: Filter active siblings
+        this._activeSiblings = this._siblings;
+        this._activeSiblings.forEach(it => it.markAsActivated(event));
+
         const { source } = event;
         source.initDragHelpers();
-        // cache clientRects
-        // const clientRects = this._clientRects = this._items.map(item => item.getRootElement().getBoundingClientRect());
+
         this._cacheItemPositions();
     }
 
     private _handleDragMove(event) {
+        this._contactContainers(event);
+
         this._sort(event);
     }
 
@@ -145,6 +176,9 @@ export class SortableRef<T = any> {
 
         const currentIndex = _.findIndex(this._itemPositions, (it) => it.item === source);
 
+        // deactivate siblings
+        this._siblings.forEach(it => it.markAsDeactivated(event));
+
         // console.log(previousIndex, currentIndex);
         this.dropped$.next({
             item: source,
@@ -154,6 +188,22 @@ export class SortableRef<T = any> {
             previousIndex: previousIndex,
             isPointerOverContainer: true
         });
+    }
+
+    private _contactContainers(event) {
+        // TODO: This is not innermost method...
+        // and the siblings shoud contain self
+        const innermostSibling = this._activeSiblings.find(it => this._intersectsWith(coerceElement(it.element)));
+        // TODO mark out of not intersected siblings
+
+        if (!innermostSibling) {
+            return ;
+        }
+
+        {
+            // find 
+        }
+
     }
 
     private _sort(event) {
@@ -234,6 +284,10 @@ export class SortableRef<T = any> {
         const itemStyle = window.getComputedStyle(item);
         return (/left|right/).test(itemStyle.cssFloat) ||
             (/inline|table-cell/).test(itemStyle.display);
+    }
+
+    private _intersectsWith(item: HTMLElement) {
+        return false;
     }
 
     private _intersectsWithPointer(item: HTMLElement, pointerPosition: Point, delta: any) {

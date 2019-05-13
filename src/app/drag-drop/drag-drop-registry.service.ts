@@ -40,7 +40,13 @@ export class DragDropRegistryService<I, C> implements OnDestroy {
     }
 
     ngOnDestroy() {
+        this._dragInstances.forEach(inst => this.removeDragItem(inst));
 
+        this._clearGlobalListeners();
+        this.pointerMove.complete();
+        this.pointerUp.complete();
+        this.startDragging$.complete();
+        this.stopDragging$.complete();
     }
 
     registerDragItem(drag: I) {
