@@ -1,5 +1,5 @@
-
-ul, li {
+ul,
+li {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -11,7 +11,7 @@ ul, li {
     border-radius: 4px;
     width: 320px;
     background: #eeeeee;
-    
+
     .sortable-item {
         margin: 4px 0;
 
@@ -43,28 +43,23 @@ ul, li {
     }
 
     &.np-drag-placeholder {
-        border: 1px dashed rgba($color: #999999, $alpha: 0.78);;
+        border: 1px dashed rgba($color: #999999, $alpha: 0.78);
+        ;
         background: rgba($color: #ffffff, $alpha: 0.78);
         color: #999999;
     }
 }
 
-
-.sortable-box.horizontal {
-    width: 90%;
-    
+.list2 {
     .sortable-item {
-        // display: inline-block;
-        float: left;
-        
-        &:not(:first-child) {
-            margin-left: 4px;
+        background: #99ff66;
+
+        &.np-drag-placeholder {
+            border: 1px dashed rgba($color: #999999, $alpha: 0.78);
+            ;
+            background: rgba($color: #99ff66, $alpha: 0.5);
+            color: #999999;
         }
     }
 
-    &::after {
-        content: '';
-        display: block;
-        clear: left;
-    }
 }

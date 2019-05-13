@@ -14,8 +14,8 @@ interface CachedItemPosition {
     clientRect: ClientRect;
     /** Amount by which the item has been moved since dragging started. */
     offset: number;
-  }
-  
+}
+
 
 export interface SortableItemRef extends DraggableRef { };
 
@@ -29,14 +29,33 @@ export class SortableRef<T = any> {
 
     private _clientRects: ClientRect[];
 
-    private _itemPositions: CachedItemPosition[]; 
+    private _itemPositions: CachedItemPosition[];
 
     axis: 'x' | 'y';
     // floating: boolean = false;
 
     instance: T;
 
-    dropped = new Subject<{
+
+    activated$ = new Subject<any>();
+    /** Before stop */
+    released$ = new Subject<any>();
+    /** Maybe triggered during sorting、removing、receiving */
+    changed$ = new Subject<any>();
+    deactivated$ = new Subject<any>();
+    /** out */
+    leaved$ = new Subject<any>();
+
+    /** over the container at first time, even if it nerver being moved out */
+    entered$ = new Subject<any>();
+    received$ = new Subject<any>();
+    removed$ = new Subject<any>();
+    sorting$ = new Subject<any>();
+    started$ = new Subject<any>();
+    /** same to stopped  */
+    ended$ = new Subject<any>();
+    /** same as updated of jquery-ui */
+    dropped$ = new Subject<{
         item: SortableItemRef,
         container: SortableRef,
         currentIndex: number,
@@ -113,21 +132,21 @@ export class SortableRef<T = any> {
         // const {source }: {source: SortableItemRef} = event;
         // const previousContainer = this;
         // const previousIndex = previousContainer.getIndexOfItem(source);
-        
+
         // const currentIndex = _.findIndex(this._itemPositions, (it) => it.item === source);
 
         // console.log(previousIndex, currentIndex);
     }
 
     private _handleDragEnd(event) {
-        const {source }: {source: SortableItemRef} = event;
+        const { source }: { source: SortableItemRef } = event;
         const previousContainer = this;
         const previousIndex = previousContainer.getIndexOfItem(source);
-        
+
         const currentIndex = _.findIndex(this._itemPositions, (it) => it.item === source);
 
         // console.log(previousIndex, currentIndex);
-        this.dropped.next({
+        this.dropped$.next({
             item: source,
             container: this,
             currentIndex: currentIndex,
@@ -181,15 +200,15 @@ export class SortableRef<T = any> {
     private _cacheItemPositions() {
         const isHorizontal = false;
         this._itemPositions = this._items.map(item => {
-            const elementToMeasure = this._dragDropRegistry.isDragging(item) ? 
-                item.getPlaceholder():
+            const elementToMeasure = this._dragDropRegistry.isDragging(item) ?
+                item.getPlaceholder() :
                 item.getRootElement();
             const clientRect = elementToMeasure.getBoundingClientRect();
 
             return <CachedItemPosition>{
                 item: item,
                 offset: 0,
-                clientRect: {...clientRect}
+                clientRect: { ...clientRect }
             };
         }).sort((a, b) => {
             return (a.clientRect.top - b.clientRect.top)

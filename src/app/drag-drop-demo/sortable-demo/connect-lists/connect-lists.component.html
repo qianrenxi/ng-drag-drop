@@ -1,0 +1,18 @@
+<div style="display: flex;">
+  <div>
+    <h2>Sortable List 1</h2>
+    <ul class="sortable-box list1" npSortable (npSortDrop)="onList1Drop($event)">
+      <li *ngFor="let item of list1" class="sortable-item" npSortableItem>
+        {{item}}
+      </li>
+    </ul>
+  </div>
+  <div style="margin-left: 32px;">
+    <h2>Sortable List 2</h2>
+    <ul class="sortable-box list2" npSortable (npSortDrop)="onList2Drop($event)">
+      <li *ngFor="let item of list2" class="sortable-item" npSortableItem>
+        {{item}}
+      </li>
+    </ul>
+  </div>
+</div>

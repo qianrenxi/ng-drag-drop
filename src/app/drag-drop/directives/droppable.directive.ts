@@ -54,6 +54,7 @@ export class DroppableDirective implements AfterViewInit, OnDestroy {
 
   @Input('npDropTolerance') tolerance: Tolerance = 'intersect';
 
+  // TODO: rename to activated
   @Output('npDropActive') actived = new EventEmitter<DropActiveEvent>();
   @Output('npDropDeactive') deactived = new EventEmitter<DropDeactiveEvent>();
   @Output('npDropRelease') released = new EventEmitter<DropReleasedEvent>();

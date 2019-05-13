@@ -1,0 +1,12 @@
+= Drag & Drop
+
+1. 先搭建代码框架，定义基本类，定义参数和事件，定义基本操作方法
+2. 确定组件生命周期和事件及事件参数
+3. 填充业务代码，完成基本业务功能及功能演示
+4. 优化用户体验，性能和交互反馈（动画、样式等）
+
+== 参考资料
+
+- https://material.angular.io/cdk/drag-drop/overview[@angular/cdk/drag-drop] 模块设计原理及源码
+- https://sortablejs.github.io/Sortable/[SortableJS] 设计原理及源码
+- http://api.jqueryui.com/category/interactions/[JQueryUI Interactions] 模块设计原理及源码
