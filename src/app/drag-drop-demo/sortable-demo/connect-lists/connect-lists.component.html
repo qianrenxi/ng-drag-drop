@@ -1,16 +1,18 @@
+<h2>Connect lists</h2>
+<!-- <p>In this demo, list 1 is connected to list 2, but list 2 is not connected to list 1. So the items of list 1 can be moved to list 2, and not the other way around.</p> -->
 <div style="display: flex;">
   <div>
-    <h2>Sortable List 1</h2>
-    <ul class="sortable-box list1" npSortable (npSortDrop)="onList1Drop($event)">
-      <li *ngFor="let item of list1" class="sortable-item" npSortableItem>
+    <h3>Sortable List 1</h3>
+    <ul class="sortable-box list1" npSortable npSortConnectWith=".list2" (npSortDrop)="onList1Drop($event)">
+      <li *ngFor="let item of list1" class="sortable-item item1" npSortableItem>
         {{item}}
       </li>
     </ul>
   </div>
   <div style="margin-left: 32px;">
-    <h2>Sortable List 2</h2>
-    <ul class="sortable-box list2" npSortable (npSortDrop)="onList2Drop($event)">
-      <li *ngFor="let item of list2" class="sortable-item" npSortableItem>
+    <h3>Sortable List 2</h3>
+    <ul class="sortable-box list2" npSortable npSortConnectWith=".list1"  (npSortDrop)="onList2Drop($event)">
+      <li *ngFor="let item of list2" class="sortable-item item2" npSortableItem>
         {{item}}
       </li>
     </ul>

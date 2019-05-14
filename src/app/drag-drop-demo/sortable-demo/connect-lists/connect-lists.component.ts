@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { moveItemInArray } from 'src/app/drag-drop/drag-utils';
+import * as _ from 'lodash';
 
 @Component({
   selector: 'np-connect-lists',
@@ -21,12 +22,21 @@ export class ConnectListsComponent implements OnInit {
   }
 
   onList1Drop($event) {
-    const { currentIndex, previousIndex } = $event;
-    moveItemInArray(this.list1, previousIndex, currentIndex);
+    this.sortOrSwitchItem($event, this.list2, this.list1);
   }
 
   onList2Drop($event) {
-    const { currentIndex, previousIndex } = $event;
-    moveItemInArray(this.list2, previousIndex, currentIndex);
+    this.sortOrSwitchItem($event, this.list1, this.list2);
+  }
+
+  sortOrSwitchItem($event, listA, listB) {
+    const { currentIndex, previousIndex, container, previousContainer } = $event;
+    // console.log($event)
+    if (container === previousContainer) {
+      moveItemInArray(listB, previousIndex, currentIndex);
+    } else {
+      const item = listA.splice(previousIndex, 1);
+      listB.splice(currentIndex, 0, item);
+    }
   }
 }

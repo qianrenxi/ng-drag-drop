@@ -6,6 +6,7 @@ import { Subscription, Subject } from 'rxjs';
 import * as _ from 'lodash';
 import { coerceElement } from '@angular/cdk/coercion';
 import { moveItemInArray } from './drag-utils';
+import { element } from 'protractor';
 
 interface CachedItemPosition {
     /** Instance of the drag item. */
@@ -22,6 +23,7 @@ export interface SortableItemRef extends DraggableRef { };
 export class SortableRef<T = any> {
 
     private _items: SortableItemRef[];
+    // private _childSortables: SortableRef[];
 
     private _anyDragStartSubscription: Subscription;
     private _anyDragStopSubscription: Subscription;
@@ -34,6 +36,11 @@ export class SortableRef<T = any> {
     private _siblings: SortableRef[];
     private _activeSiblings: SortableRef[];
     private _isActivated: boolean = false;
+
+    get entered(): boolean {
+        return this._entered;
+    }
+    private _entered: boolean = false;
 
     axis: 'x' | 'y';
     // floating: boolean = false;
@@ -86,6 +93,11 @@ export class SortableRef<T = any> {
         return this;
     }
 
+    // withChildren(children: SortableRef[]): this {
+    //     this._childSortables = children;
+    //     return this;
+    // }
+
     connectWith(sortables: SortableRef[]): this {
         this._siblings = sortables.slice();
         return this;
@@ -98,12 +110,12 @@ export class SortableRef<T = any> {
 
     }
 
-    getIndexOfItem(item: SortableItemRef) {
+    getIndexOfItem(item: SortableItemRef): number {
         return _.indexOf(this._items, item);
     }
 
-    isActivated() {
-        return this._isActivated;
+    isActivated(): boolean {
+        return !!this._isActivated;
     }
 
     markAsActivated(event) {
@@ -114,6 +126,94 @@ export class SortableRef<T = any> {
     markAsDeactivated(event) {
         this._isActivated = false;
         this.deactivated$.next(event);
+    }
+
+    // contains(target: SortableRef): boolean {
+    //     return _.includes(this._childSortables, target);
+    // }
+
+    enter(event, initContainer) {
+        // TODO: extract to a method
+        const { source, pointerPosition, delta }: { source: SortableItemRef, pointerPosition: Point, delta } = event;
+        // const currentItemElement = source.getRootElement();
+        // const dist = 10000;
+        // const floating = this._isFloating(currentItemElement);
+        // const posProperty = floating ? 'left' : 'top';
+        // const sizeProperty = floating ? 'width' : 'height';
+        // const axis = floating ? 'x' : 'y';
+
+        let itemWithLeastDistance = null;
+        let direction = null;
+
+        // // if (_.isEmpty(this._items) && !this.dropOnEmpty) {  return false; }
+
+        if (!_.isEmpty(this._items)) {
+            this._items.forEach((item, index) => {
+                const itemElement = item.getRootElement();
+                if (!coerceElement(this.element).contains(itemElement)) {
+                    return;
+                }
+
+                if (item === source) {
+                    return;
+                }
+
+                // TODO, 优化定位，解决闪动的问题
+                const intersect = this._intersectsWithPointer(itemElement, pointerPosition, delta);
+
+                if (!intersect) {
+                    return;
+                }
+
+                itemWithLeastDistance = item;
+                direction = intersect === 1 ? 'down' : 'up';
+            });
+        }
+
+        if (itemWithLeastDistance) {
+            this._rearrange(event, direction, itemWithLeastDistance);
+        } else {
+            // 可以解决空容器的问题
+            this._rearrange(event, direction);
+        }
+
+        // TODO emit change,
+        // TODO shuld emit change after enter, so 应该调整时间及相应处理逻辑的先后顺序
+        // 但是，jQuery UI也是先触发了 change 然后是over的，值得商榷
+
+        this._entered = true;
+        this.entered$.next({
+            ...event,
+            target: this
+        });
+
+        if (!_.includes(this._items, source)) {
+            this.beforStarted.next();
+            this._cacheItemPositions(source);
+
+            this._dragSubscriptions.push(
+                source.moved.subscribe((event) => {
+                    this._sort(event);
+                }),
+                source.ended.subscribe((event) => {
+                    // console.log("other container catch end", source);
+                    this._handleDragEnd(event, initContainer);
+                })
+            );
+        }
+    }
+
+    leave(event) {
+        this._entered = false;
+
+        const { source }: { source: SortableItemRef } = event;
+        if (!_.includes(this._items, source)) {
+            this._removeDragSubscriptions();
+        }
+    }
+
+    cancel() {
+        this._entered = false;
     }
 
     private _anyDragStarted(dragRef: SortableItemRef) {
@@ -142,7 +242,7 @@ export class SortableRef<T = any> {
 
     private _handleDragStart(event) {
         this.beforStarted.next();
-        
+
         // TODO: Filter active siblings
         this._activeSiblings = this._siblings;
         this._activeSiblings.forEach(it => it.markAsActivated(event));
@@ -154,9 +254,13 @@ export class SortableRef<T = any> {
     }
 
     private _handleDragMove(event) {
-        this._contactContainers(event);
+        const innermostContainer = this._contactContainers(event);
 
-        this._sort(event);
+        // this._sort(event);
+        // expect must be found
+        if (innermostContainer === this) {
+            this._sort(event);
+        }
     }
 
     private _handleDragRelease(event) {
@@ -169,15 +273,17 @@ export class SortableRef<T = any> {
         // console.log(previousIndex, currentIndex);
     }
 
-    private _handleDragEnd(event) {
+    private _handleDragEnd(event, initialContainer?) {
         const { source }: { source: SortableItemRef } = event;
-        const previousContainer = this;
+        const previousContainer = initialContainer || this;
         const previousIndex = previousContainer.getIndexOfItem(source);
 
         const currentIndex = _.findIndex(this._itemPositions, (it) => it.item === source);
 
-        // deactivate siblings
-        this._siblings.forEach(it => it.markAsDeactivated(event));
+        if (initialContainer === this) {
+            // deactivate siblings
+            this._siblings.forEach(it => it.markAsDeactivated(event));
+        }
 
         // console.log(previousIndex, currentIndex);
         this.dropped$.next({
@@ -188,25 +294,78 @@ export class SortableRef<T = any> {
             previousIndex: previousIndex,
             isPointerOverContainer: true
         });
+
+        if (initialContainer === this) {
+            this._activeSiblings.forEach(it => {
+                it.cancel();
+            });
+        }
     }
 
     private _contactContainers(event) {
-        // TODO: This is not innermost method...
-        // and the siblings shoud contain self
-        const innermostSibling = this._activeSiblings.find(it => this._intersectsWith(coerceElement(it.element)));
-        // TODO mark out of not intersected siblings
+        const { source, pointerPosition, delta }: { source: SortableItemRef, pointerPosition: Point, delta } = event;
+        const currentItem = source;
+        const currentItemElement = currentItem.getRootElement();
 
-        if (!innermostSibling) {
-            return ;
+        const containers = _.isEmpty(this._activeSiblings) ? [this] : _.concat(this, this._activeSiblings); // 可能已包含自己，去重...
+        // const innermostSibling = this._activeSiblings.find(it => this._intersectsWith(coerceElement(it.element)));
+        let innermostContainer: SortableRef = null;
+        let innermostIndex = null; // 没有实际的参考价值，目标数组对象是不可控的 
+
+        containers.forEach((container, index) => {
+            const containerElement = coerceElement(container.element);
+            // Never consider a container that's located within the item itself.
+            if (currentItemElement!.contains(containerElement)) {
+                return;
+            }
+
+            // console.log(pointerPosition)
+            // console.log(index, containerElement.getBoundingClientRect())
+            if (this._intersectsWith(containerElement, pointerPosition, delta)) {
+                // If we've already found a container and it's more "inner" than this, then continue
+                if (innermostContainer && containerElement.contains(coerceElement(innermostContainer.element))) {
+                    return;
+                }
+
+                innermostContainer = container;
+                innermostIndex = index;
+            } else {
+                // container dosen't intersect, emit "out" event if necessary
+                if (container.entered) {
+                    // mark out of container
+                    container.leave(event);
+                }
+            }
+        });
+
+        if (!innermostContainer) {
+            return;
         }
 
-        {
-            // find 
+        if (innermostContainer === this) {
+            if (!this.entered) {
+                // TODO: mark enter into the container
+                this._entered = true;
+            }
+
+            // return ;
+        } else {
+            // When entering a new container, we will find the item with the least distance and
+            // append our item near it
+            if (!innermostContainer.entered) {
+                innermostContainer.enter(event, this);
+            }
+
         }
 
+        return innermostContainer;
     }
 
-    private _sort(event) {
+    _sort(event) {
+        if (!this.enter) {
+            return;
+        }
+
         const { source, pointerPosition, delta }: { source: SortableItemRef, pointerPosition: { x: number, y: number }, delta: any } = event;
         // console.log('Sort Pointer', pointerPosition, delta)
 
@@ -247,9 +406,9 @@ export class SortableRef<T = any> {
 
     }
 
-    private _cacheItemPositions() {
+    private _cacheItemPositions(outerItem?) {
         const isHorizontal = false;
-        this._itemPositions = this._items.map(item => {
+        this._itemPositions = (outerItem ? [...this._items, outerItem] : this._items).map(item => {
             const elementToMeasure = this._dragDropRegistry.isDragging(item) ?
                 item.getPlaceholder() :
                 item.getRootElement();
@@ -268,12 +427,17 @@ export class SortableRef<T = any> {
         });
     }
 
-    private _rearrange(event, direction, item: SortableItemRef, ) {
+    private _rearrange(event, direction, item?: SortableItemRef, ) {
         const { source }: { source: SortableItemRef } = event;
         const placeholder = source.getPlaceholder();
 
-        const itemElement = item.getRootElement();
-        itemElement.parentNode.insertBefore(placeholder, (direction === "down" ? itemElement : itemElement.nextSibling))
+        if (!!item) {
+            const itemElement = item.getRootElement();
+            itemElement.parentNode.insertBefore(placeholder, (direction === "down" ? itemElement : itemElement.nextSibling))
+        } else {
+            const containerElement = coerceElement(this.element);
+            containerElement.appendChild(placeholder);
+        }
     }
 
     private _isOverAxis(x, reference, size) {
@@ -286,8 +450,9 @@ export class SortableRef<T = any> {
             (/inline|table-cell/).test(itemStyle.display);
     }
 
-    private _intersectsWith(item: HTMLElement) {
-        return false;
+    // Be careful with the following core functions
+    private _intersectsWith(item: HTMLElement, pointerPosition: Point, delta: any) {
+        return this._intersectsWithPointer(item, pointerPosition, delta);
     }
 
     private _intersectsWithPointer(item: HTMLElement, pointerPosition: Point, delta: any) {

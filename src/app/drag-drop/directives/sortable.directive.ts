@@ -18,38 +18,39 @@ export class SortableDirective implements AfterContentInit, OnDestroy {
   private static _globalSortables: SortableDirective[] = [];
 
   private _destroyed = new Subject();
-  
+
   _sortRef: SortableRef<SortableDirective>;
 
   @Input('npSortAxis') axis: 'x' | 'y';
   @Input('npSortConnectWith') connectWith: string;
 
   @ContentChildren(SortableItemDirective) items: QueryList<SortableItemDirective>;
+  // @ContentChildren(SortableDirective) childSortables: QueryList<SortableDirective>;
 
-  @Output('')
+  @Output('npSortActivate')
   activated = new EventEmitter<any>();
   /** Before stop */
-  @Output('')
+  @Output('npSortRelease')
   released = new EventEmitter<any>();
   /** Maybe triggered during sorting、removing、receiving */
-  @Output('')
+  @Output('npSortChange')
   changed = new EventEmitter<any>();
-  @Output('')
+  @Output('npSortDeactivate')
   deactivated = new EventEmitter<any>();
-  @Output('')
+  @Output('npSortLeave')
   leaved = new EventEmitter<any>();
-  @Output('')
+  @Output('npSortEntere')
   entered = new EventEmitter<any>();
-  @Output('')
+  @Output('npSortReceive')
   received = new EventEmitter<any>();
-  @Output('')
+  @Output('npSortRemove')
   removed = new EventEmitter<any>();
-  @Output('')
+  @Output('npSortSorting')
   sorting = new EventEmitter<any>();
-  @Output('')
+  @Output('npSortStarte')
   started = new EventEmitter<any>();
   /** same to stopped */
-  @Output('')
+  @Output('npSortEnd')
   ended = new EventEmitter<any>();
   /** same as updated of jquery-ui */
   @Output('npSortDrop')
@@ -75,12 +76,24 @@ export class SortableDirective implements AfterContentInit, OnDestroy {
 
   ngAfterContentInit() {
     // console.log(`Found ${this.items.length} items in sortable`);
-    this.items.changes
-      .pipe(startWith(this.items), takeUntil(this._destroyed))
-      .subscribe((items: QueryList<SortableItemDirective>) => {
-        const sortItems: SortableItemRef[] = items.toArray().map(it => it._dragRef as SortableItemRef);
-        this._sortRef.withItems(sortItems);
-      });
+    this._ngZone.onStable.asObservable()
+      .pipe(take(1), takeUntil(this._destroyed))
+      .subscribe(() => {
+        this.items.changes
+          .pipe(startWith(this.items), takeUntil(this._destroyed))
+          .subscribe((items: QueryList<SortableItemDirective>) => {
+            const sortItems: SortableItemRef[] = items.toArray().map(it => it._dragRef as SortableItemRef);
+            this._sortRef.withItems(sortItems);
+          });
+        // this.childSortables.changes
+        //   .pipe(startWith(this.childSortables), takeUntil(this._destroyed))
+        //   .subscribe((childSortables: QueryList<SortableDirective>) => {
+        //     const children: SortableRef[] = childSortables.toArray()
+        //       .filter(it => it === this)
+        //       .map(it => it._sortRef);
+        //     this._sortRef.withChildren(children);
+        //   });
+      })
   }
 
   ngOnDestroy() {
@@ -102,7 +115,7 @@ export class SortableDirective implements AfterContentInit, OnDestroy {
 
   private _handleEvents(ref: SortableRef<SortableDirective>) {
     ref.dropped$.subscribe((event) => {
-      const {item, container, currentIndex, previousContainer, previousIndex, isPointerOverContainer} = event;
+      const { item, container, currentIndex, previousContainer, previousIndex, isPointerOverContainer } = event;
       this.dropped.emit({
         item: item.instance,
         container: this,
@@ -117,5 +130,5 @@ export class SortableDirective implements AfterContentInit, OnDestroy {
 
 function isElementMatchSelector(element: HTMLElement, selector: string) {
   return element.matches ? element.matches(selector) :
-      (element as any).msMatchesSelector(selector);
+    (element as any).msMatchesSelector(selector);
 }

@@ -1,3 +1,6 @@
-<p>
-  asgrid works!
-</p>
+<h2>Grid sortable list</h2>
+<ul class="sortable-box" npSortable (npSortDrop)="onSortDrop($event)">
+  <li *ngFor="let item of items" class="sortable-item" npSortableItem>
+    {{item}}
+  </li>
+</ul>

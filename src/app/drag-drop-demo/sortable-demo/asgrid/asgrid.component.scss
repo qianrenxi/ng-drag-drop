@@ -1,0 +1,55 @@
+
+
+.sortable-box { list-style-type: none; margin: 0; padding: 0; width: 450px; }
+.sortable-box li { margin: 3px 3px 3px 0; padding: 1px; float: left; width: 100px; height: 90px; font-size: 4em; text-align: center; }
+
+
+.sortable-box {
+    padding: 16px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    // width: 320px;
+    background: #eeeeee;
+    
+    .sortable-item {
+        // margin: 4px 0;
+
+        &:not(.np-drag-dragging) {
+            transition: all 0.5s;
+        }
+    }
+
+    &::after {
+        content: '';
+        display: block;
+        clear: left;
+    }
+}
+
+.sortable-item {
+    border: 1px solid #999999;
+    border-radius: 2px;
+    // height: 30px;
+    // line-height: 30px;
+    // padding: 0 12px;
+    background: #ffffff;
+    // margin: 4px 0;
+
+    user-select: none;
+
+    &:not(.np-drag-preview) {
+        transition: all 0.5s;
+    }
+
+    &.np-drag-preview {
+        border: 1px solid #cc9933;
+        background: rgba($color: #cc9933, $alpha: 0.32);
+        color: #cc9933;
+    }
+
+    &.np-drag-placeholder {
+        border: 1px dashed rgba($color: #999999, $alpha: 0.78);;
+        background: rgba($color: #ffffff, $alpha: 0.78);
+        color: #999999;
+    }
+}
